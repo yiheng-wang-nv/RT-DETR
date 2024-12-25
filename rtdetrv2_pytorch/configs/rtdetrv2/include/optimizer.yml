@@ -7,7 +7,7 @@ ema:
   warmups: 2000
 
 
-epoches: 72
+epoches: 20
 clip_max_norm: 0.1
 
 
@@ -28,10 +28,9 @@ optimizer:
 
 lr_scheduler:
   type: MultiStepLR
-  milestones: [1000]
+  milestones: [1000]  # epoches
   gamma: 0.1
 
-
-lr_warmup_scheduler:
-  type: LinearWarmup
-  warmup_duration: 2000
+# lr_warmup_scheduler:
+#   type: LinearWarmup
+#   warmup_duration: 2000

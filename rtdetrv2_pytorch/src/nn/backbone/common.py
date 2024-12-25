@@ -62,7 +62,7 @@ def freeze_batch_norm2d(module: nn.Module) -> nn.Module:
 def get_activation(act: str, inplace: bool=True):
     """get activation
     """
-    if act is None:
+    if act is None or act == "identity":
         return nn.Identity()
 
     elif isinstance(act, nn.Module):
