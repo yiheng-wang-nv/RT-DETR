@@ -7,12 +7,14 @@ __include__: [
 ]
 
 
-output_dir: ./output/rtdetrv2_r101vd_6x_coco_640_20_epochs_no_pretrain
+output_dir: ./output/rtdetrv2_r101vd_6x_coco_20_epoch_no_amp_no_pretrain
 
 
 PResNet:
   depth: 101
   pretrained: False
+  freeze_norm: False
+  freeze_at: -1
 
 
 HybridEncoder:
@@ -28,14 +30,14 @@ RTDETRTransformerv2:
 optimizer:
   type: AdamW
   params: 
-    - 
-      params: '^(?=.*backbone)(?!.*norm|bn).*$'
-      lr: 0.0004
+    # - 
+    #   params: '^(?=.*backbone)(?!.*norm|bn).*$'
+    #   lr: 0.00004
     - 
       params: '^(?=.*(?:encoder|decoder))(?=.*(?:norm|bn)).*$'
       weight_decay: 0.
 
   lr: 0.0004
   betas: [0.9, 0.999]
-  weight_decay: 0.0001
+  weight_decay: 0.01
 

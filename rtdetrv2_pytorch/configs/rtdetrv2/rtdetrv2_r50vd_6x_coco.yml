@@ -1,14 +1,22 @@
 __include__: [
-  '../dataset/coco_detection.yml',
-  '../runtime.yml',
-  './include/dataloader.yml',
-  './include/optimizer.yml',
-  './include/rtdetrv2_r50vd.yml',
+  '/colon_workspace/RT-DETR/rtdetrv2_pytorch/configs/dataset/colon_detection.yml',
+  '/colon_workspace/RT-DETR/rtdetrv2_pytorch/configs/runtime.yml',
+  '/colon_workspace/RT-DETR/rtdetrv2_pytorch/configs/rtdetrv2/include/dataloader.yml',
+  '/colon_workspace/RT-DETR/rtdetrv2_pytorch/configs/rtdetrv2/include/optimizer.yml',
+  '/colon_workspace/RT-DETR/rtdetrv2_pytorch/configs/rtdetrv2/include/rtdetrv2_r50vd.yml',
 ]
 
 
-output_dir: ./output/rtdetrv2_r50vd_6x_coco
+output_dir: ./output/rtdetrv2_r50vd_6x_coco_20_epoch_amp
 
+PResNet:
+  depth: 50
+  variant: d
+  freeze_at: 0
+  return_idx: [1, 2, 3]
+  num_stages: 4
+  freeze_norm: True
+  pretrained: True
 
 
 optimizer:
@@ -16,12 +24,11 @@ optimizer:
   params: 
     - 
       params: '^(?=.*backbone)(?!.*norm).*$'
-      lr: 0.00001
+      lr: 0.00004
     - 
       params: '^(?=.*(?:encoder|decoder))(?=.*(?:norm|bn)).*$'
       weight_decay: 0.
 
-  lr: 0.0001
+  lr: 0.0004
   betas: [0.9, 0.999]
   weight_decay: 0.0001
-
