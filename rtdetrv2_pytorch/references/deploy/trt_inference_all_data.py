@@ -228,12 +228,14 @@ if __name__ == '__main__':
     parser.add_argument('-f', '--im-folder', type=str, default="/colon_workspace/real-colon-dataset/real_colon_dataset_coco_fmt_3subsets_poslesion1000_negratio0/test_images")
     parser.add_argument('-a', '--ann-file', type=str, default="/colon_workspace/real-colon-dataset/real_colon_dataset_coco_fmt_3subsets_poslesion1000_negratio0/test_ann.json")
     parser.add_argument('-d', '--device', type=str, default='cuda:0')
+    parser.add_argument('-b', '--batch-size', type=int, default=128)
 
     args = parser.parse_args()
 
     model = TRTInference(args.trt_file, device=args.device)
     test_ann = args.ann_file
     test_path = args.im_folder
+    batch_size = args.batch_size
 
     # Define the image transformations
     transform = T.Compose([
@@ -242,7 +244,7 @@ if __name__ == '__main__':
     ])
 
     dataset = ImageDataset(json_file=test_ann, image_root_dir=test_path, transform=transform)
-    dataloader = DataLoader(dataset, batch_size=128, shuffle=False, num_workers=16)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=16)
 
     start = timer()
 
