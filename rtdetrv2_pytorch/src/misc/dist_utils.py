@@ -22,7 +22,103 @@ from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 
 from torch.utils.data import DistributedSampler
 # from torch.utils.data.dataloader import DataLoader
-from ..data import DataLoader 
+from ..data import DataLoader
+
+
+import math
+from typing import Iterator, Optional, TypeVar
+
+import torch
+import torch.distributed as dist
+from torch.utils.data.dataset import Dataset
+from torch.utils.data.sampler import Sampler
+
+__all__ = ["WeightedDistributedSampler"]
+
+_T_co = TypeVar("_T_co", covariant=True)
+
+class WeightedDistributedSampler(Sampler[_T_co]):
+    def __init__(
+        self,
+        dataset: Dataset,
+        pos_indices: list,
+        neg_indices: list,
+        num_replicas: Optional[int] = None,
+        rank: Optional[int] = None,
+        batch_size: int = 4,
+        shuffle: bool = True,
+        seed: int = 0,
+        drop_last: bool = False,
+    ) -> None:
+        if num_replicas is None:
+            if not dist.is_available():
+                raise RuntimeError("Requires distributed package to be available")
+            num_replicas = dist.get_world_size()
+        if rank is None:
+            if not dist.is_available():
+                raise RuntimeError("Requires distributed package to be available")
+            rank = dist.get_rank()
+        if rank >= num_replicas or rank < 0:
+            raise ValueError(
+                f"Invalid rank {rank}, rank should be in the interval [0, {num_replicas - 1}]"
+            )
+        self.dataset = dataset
+        self.pos_indices = pos_indices
+        self.neg_indices = neg_indices
+        self.num_replicas = num_replicas
+        self.rank = rank
+        self.epoch = 0
+        self.drop_last = drop_last
+        self.batch_size = batch_size
+        self.shuffle = shuffle
+        self.seed = seed
+        self.num_samples = int(math.ceil(len(self.dataset) * 1.0 / self.num_replicas))
+        self.total_size = self.num_samples * self.num_replicas
+        self.indices = self._generate_indices()
+        print("total_size: ", self.total_size, "num_samples: ", self.num_samples, "indices: ", len(self.indices), "dataset: ", len(self.dataset))
+
+    def _generate_indices(self):
+        g = torch.Generator()
+        g.manual_seed(self.seed + self.epoch)
+        
+        if self.shuffle:
+            pos_indices = torch.tensor(self.pos_indices)[torch.randperm(len(self.pos_indices), generator=g)].tolist()
+            neg_indices = torch.tensor(self.neg_indices)[torch.randperm(len(self.neg_indices), generator=g)].tolist()
+        else:
+            pos_indices = self.pos_indices
+            neg_indices = self.neg_indices
+
+        indices = []
+        pos_batch_size = 2
+        neg_batch_size = self.batch_size - pos_batch_size
+
+        num_batches = len(pos_indices)
+        required_neg_samples = num_batches * neg_batch_size
+        if len(neg_indices) < required_neg_samples:
+            neg_indices = neg_indices * (required_neg_samples // len(neg_indices) + 1)
+        
+        pos_ct = 0
+        neg_ct = 0
+        for i in range(num_batches):
+            pos_batch = pos_indices[i:i + pos_batch_size]
+            neg_batch = neg_indices[i * neg_batch_size:(i + 1) * neg_batch_size]
+            indices.extend(pos_batch + neg_batch)
+            pos_ct += len(pos_batch)
+            neg_ct += len(neg_batch)
+
+        print("pos_ct: ", pos_ct, "neg_ct: ", neg_ct)
+        return indices
+
+    def __iter__(self) -> Iterator[_T_co]:
+        indices = self.indices[self.rank:self.total_size:self.num_replicas]
+        return iter(indices)
+
+    def __len__(self) -> int:
+        return len(self.indices) // self.num_replicas
+
+    def set_epoch(self, epoch: int) -> None:
+        self.epoch = epoch
+        self.indices = self._generate_indices()
 
 
 def setup_distributed(print_rank: int=0, print_method: str='builtin', seed: int=None, ):
@@ -53,15 +149,16 @@ def setup_distributed(print_rank: int=0, print_method: str='builtin', seed: int=
         enabled_dist = False
         print('Not init distributed mode.')
 
-    setup_print(get_rank() == print_rank, method=print_method)
+    setup_print(get_rank() == print_rank, method=print_method, enable_all_ranks=False)
     if seed is not None:
         setup_seed(seed)
 
     return enabled_dist
 
 
-def setup_print(is_main, method='builtin'):
+def setup_print(is_main, method='builtin', enable_all_ranks=False):
     """This function disables printing when not in master process
+    unless enable_all_ranks is set to True.
     """
     import builtins as __builtin__
 
@@ -77,7 +174,7 @@ def setup_print(is_main, method='builtin'):
 
     def print(*args, **kwargs):
         force = kwargs.pop('force', False)
-        if is_main or force:
+        if is_main or force or enable_all_ranks:
             builtin_print(*args, **kwargs)
 
     __builtin__.print = print
@@ -149,6 +246,26 @@ def warp_model(
 def de_model(model):
     return de_parallel(de_complie(model))
 
+
+def warp_train_loader(loader, shuffle=False):        
+    if is_dist_available_and_initialized():
+        sampler = WeightedDistributedSampler(
+            loader.dataset,
+            pos_indices=loader.dataset.pos_indices,
+            neg_indices=loader.dataset.neg_indices,
+            batch_size=loader.batch_size,
+            shuffle=shuffle,
+            drop_last=loader.drop_last,
+        )
+        # sampler = DistributedSampler(loader.dataset, shuffle=shuffle)
+        loader = DataLoader(loader.dataset, 
+                            loader.batch_size, 
+                            sampler=sampler, 
+                            drop_last=loader.drop_last, 
+                            collate_fn=loader.collate_fn, 
+                            pin_memory=loader.pin_memory,
+                            num_workers=loader.num_workers, )
+    return loader
 
 def warp_loader(loader, shuffle=False):        
     if is_dist_available_and_initialized():

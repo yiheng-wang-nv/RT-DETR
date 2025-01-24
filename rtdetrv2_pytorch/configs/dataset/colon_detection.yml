@@ -7,12 +7,12 @@ evaluator:
 num_classes: 1
 remap_mscoco_category: True
 
-train_dataloader: 
+train_dataloader:
   type: DataLoader
   dataset: 
     type: CocoDetection
-    img_folder: /colon_workspace/real-colon-dataset/real_colon_dataset_coco_fmt_3subsets_poslesion1000_negratio0/train_images
-    ann_file: /colon_workspace/real-colon-dataset/real_colon_dataset_coco_fmt_3subsets_poslesion1000_negratio0/train_ann.json
+    img_folder: /colon_workspace/real-colon-dataset/real_colon_dataset_coco_fmt_3subsets_poslesion-1_negratio1/train_images
+    ann_file: /colon_workspace/real-colon-dataset/real_colon_dataset_coco_fmt_3subsets_poslesion-1_negratio1/train_ann.json
     return_masks: False
     transforms:
       type: Compose
@@ -28,14 +28,14 @@ val_dataloader:
   type: DataLoader
   dataset: 
     type: CocoDetection
-    img_folder: /colon_workspace/real-colon-dataset/real_colon_dataset_coco_fmt_3subsets_poslesion1000_negratio0/validation_images
-    ann_file: /colon_workspace/real-colon-dataset/real_colon_dataset_coco_fmt_3subsets_poslesion1000_negratio0/validation_ann.json
-    # img_folder: /colon_workspace/real-colon-dataset/real_colon_dataset_coco_fmt_3subsets_poslesion1000_negratio0/test_images
-    # ann_file: /colon_workspace/real-colon-dataset/real_colon_dataset_coco_fmt_3subsets_poslesion1000_negratio0/test_ann.json
+    # img_folder: /colon_workspace/real-colon-dataset/real_colon_dataset_coco_fmt_3subsets_poslesion-1_negratio1/validation_images
+    # ann_file: /colon_workspace/real-colon-dataset/real_colon_dataset_coco_fmt_3subsets_poslesion-1_negratio1/validation_ann.json
+    img_folder: /colon_workspace/real-colon-dataset/real_colon_dataset_coco_fmt_3subsets_poslesion-1_negratio1/test_images
+    ann_file: /colon_workspace/real-colon-dataset/real_colon_dataset_coco_fmt_3subsets_poslesion-1_negratio1/test_ann.json
     return_masks: False
     transforms:
       type: Compose
-      ops: ~ 
+      ops: ~
   shuffle: False
   num_workers: 16
   drop_last: False

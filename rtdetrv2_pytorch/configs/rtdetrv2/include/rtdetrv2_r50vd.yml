@@ -74,6 +74,7 @@ RTDETRCriterionv2:
   losses: ['vfl', 'boxes', ]
   alpha: 0.75
   gamma: 2.0
+  num_classes: 1
 
   matcher:
     type: HungarianMatcher

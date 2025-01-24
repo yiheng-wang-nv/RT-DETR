@@ -7,7 +7,7 @@ __include__: [
 ]
 
 
-output_dir: ./output/rtdetrv2_timm_r50vd_6x_colon_20_epoch_no_freeze_bn_lr1e-4
+output_dir: ./output/log_640_rtdetrv2_timm_r50vd_6x_colon_20_epoch_finetune_pos_backbone_pos1_neg1
 
 RTDETR: 
   backbone: TimmModel
@@ -42,10 +42,12 @@ HybridEncoder:
 
 
 RTDETRTransformerv2:
+  num_classes: 1
   feat_channels: [256, 256, 256]
   feat_strides: [8, 16, 32]
   hidden_dim: 256
   num_levels: 3
+  aux_loss: True
 
   num_layers: 6
   num_queries: 300
@@ -62,16 +64,21 @@ RTDETRTransformerv2:
   query_select_method: default # default, agnostic 
 
 
+RTDETRPostProcessor:
+  num_top_queries: 300
+  num_classes: 1
+
+
 optimizer:
   type: AdamW
   params: 
     # - 
     #   params: '^(?=.*backbone)(?!.*norm).*$'
-    #   lr: 0.00004
+    #   lr: 0.0001
     - 
       params: '^(?=.*(?:encoder|decoder))(?=.*(?:norm|bn)).*$'
       weight_decay: 0.
 
-  lr: 0.0004
+  lr: 0.0003
   betas: [0.9, 0.999]
   weight_decay: 0.0001

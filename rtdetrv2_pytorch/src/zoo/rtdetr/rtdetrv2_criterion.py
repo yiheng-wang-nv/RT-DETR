@@ -30,7 +30,7 @@ class RTDETRCriterionv2(nn.Module):
         losses, 
         alpha=0.2, 
         gamma=2.0, 
-        num_classes=80, 
+        num_classes=1, 
         boxes_weight_format=None,
         share_matched_indices=False):
         """Create the criterion.
@@ -158,6 +158,24 @@ class RTDETRCriterionv2(nn.Module):
 
         # Compute all the requested losses
         losses = {}
+        possible_keys = [
+            'loss_vfl', 'loss_bbox', 'loss_giou',
+            'loss_vfl_aux_0', 'loss_bbox_aux_0', 'loss_giou_aux_0',
+            'loss_vfl_aux_1', 'loss_bbox_aux_1', 'loss_giou_aux_1',
+            'loss_vfl_aux_2', 'loss_bbox_aux_2', 'loss_giou_aux_2',
+            'loss_vfl_aux_3', 'loss_bbox_aux_3', 'loss_giou_aux_3',
+            'loss_vfl_aux_4', 'loss_bbox_aux_4', 'loss_giou_aux_4',
+            'loss_vfl_dn_0', 'loss_bbox_dn_0', 'loss_giou_dn_0',
+            'loss_vfl_dn_1', 'loss_bbox_dn_1', 'loss_giou_dn_1',
+            'loss_vfl_dn_2', 'loss_bbox_dn_2', 'loss_giou_dn_2',
+            'loss_vfl_dn_3', 'loss_bbox_dn_3', 'loss_giou_dn_3',
+            'loss_vfl_dn_4', 'loss_bbox_dn_4', 'loss_giou_dn_4',
+            'loss_vfl_dn_5', 'loss_bbox_dn_5', 'loss_giou_dn_5',
+            'loss_vfl_enc_0', 'loss_bbox_enc_0', 'loss_giou_enc_0'
+        ]
+        for key in possible_keys:
+            losses[key] = torch.tensor(0.0, device=outputs['pred_boxes'].device)
+
         for loss in self.losses:
             meta = self.get_loss_meta_info(loss, outputs, targets, indices)            
             l_dict = self.get_loss(loss, outputs, targets, indices, num_boxes, **meta)

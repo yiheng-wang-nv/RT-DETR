@@ -35,6 +35,23 @@ class CocoDetection(torchvision.datasets.CocoDetection, DetDataset):
         self.return_masks = return_masks
         self.remap_mscoco_category = remap_mscoco_category
 
+        self.pos_indices = []
+        self.neg_indices = []
+
+        # Determine positive and negative samples
+        for idx, image_id in enumerate(self.ids):
+            ann_ids = self.coco.getAnnIds(imgIds=image_id)
+            anns = self.coco.loadAnns(ann_ids)
+            if len(anns) > 0:
+                self.pos_indices.append(idx)
+            else:
+                self.neg_indices.append(idx)
+
+        print("dataset length: ", len(self.ids))
+        print("positive samples: ", len(self.pos_indices))
+        print("negative samples: ", len(self.neg_indices))
+
+
     def __getitem__(self, idx):
         img, target = self.load_item(idx)
         if self._transforms is not None:
