@@ -23,7 +23,6 @@ def main(args, ):
         else:
             state = checkpoint['model']
 
-        # NOTE load train mode state -> convert to deploy mode
         cfg.model.load_state_dict(state)
 
     else:
@@ -34,30 +33,32 @@ def main(args, ):
         def __init__(self, ) -> None:
             super().__init__()
             self.model = cfg.model.deploy()
-            self.postprocessor = cfg.postprocessor.deploy()
+            # self.postprocessor = cfg.postprocessor.deploy()
             
-        def forward(self, images, orig_target_sizes):
+        def forward(self, images):
             outputs = self.model(images)
-            outputs = self.postprocessor(outputs, orig_target_sizes)
+            # outputs = self.postprocessor(outputs, orig_target_sizes)
             return outputs
 
     model = Model()
 
     data = torch.rand(1, 3, 640, 640)
-    size = torch.tensor([[640, 640]])
-    _ = model(data, size)
+    # size = torch.tensor([[640, 640]])
+    output = model(data)
+    print(output["pred_logits"].shape, output["pred_boxes"].shape)
 
     dynamic_axes = {
-        'images': {0: 'N', },
-        'orig_target_sizes': {0: 'N'}
+        'INPUT__0': {0: 'batch_size'},
+        'pred_logits': {0: 'batch_size'},
+        'pred_boxes': {0: 'batch_size'},
     }
 
     torch.onnx.export(
         model, 
-        (data, size), 
+        data, 
         args.output_file,
-        input_names=['images', 'orig_target_sizes'],
-        output_names=['labels', 'boxes', 'scores'],
+        input_names=['INPUT__0'],
+        output_names=["pred_logits", "pred_boxes"],
         dynamic_axes=dynamic_axes,
         opset_version=16, 
         verbose=False,
@@ -75,7 +76,7 @@ def main(args, ):
         import onnxsim
         dynamic = True 
         # input_shapes = {'images': [1, 3, 640, 640], 'orig_target_sizes': [1, 2]} if dynamic else None
-        input_shapes = {'images': data.shape, 'orig_target_sizes': size.shape} if dynamic else None
+        input_shapes = {'images': data.shape} if dynamic else None
         onnx_model_simplify, check = onnxsim.simplify(args.file_name, input_shapes=input_shapes, dynamic_input_shape=dynamic)
         onnx.save(onnx_model_simplify, args.file_name)
         print(f'Simplify onnx model {check}...')

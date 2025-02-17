@@ -61,6 +61,10 @@ python tools/export_onnx.py \
 -r /colon_workspace/RT-DETR/rtdetrv2_pytorch/output/rtdetrv2_timm_r50vd_6x_colon_20_epoch_no_freeze_bn_lr1e-4_all_data_pos1_neg3/checkpoint0002.pth \
 --check --output_file rtdetrv2_timm_r50_nvimagenet_pretrained_neg_finetune.onnx
 
+# switch to bhwc
+pip install onnx_graphsurgeon
+python tools/graph_surgeon.py rtdetrv2_timm_r50_nvimagenet_pretrained_neg_finetune.onnx rtdetrv2_timm_r50_nvimagenet_pretrained_neg_finetune_bhwc.onnx
+
 # onnx inference
 pip install onnxruntime
 
@@ -69,7 +73,7 @@ python references/deploy/rtdetrv2_onnxruntime.py \
 --im-file /colon_workspace/real-colon-dataset/real_colon_dataset_coco_fmt_3subsets_poslesion1000_negratio0/test_images/001-014_21220.jpg
 
 # docker
-docker run --rm -it --gpus=all --ipc=host -p 8888:8888 -v /raid/colon_reproduce:/colon_workspace holoscan:polyp-det
+docker run --rm -it --gpus=all --ipc=host -v /raid/colon_reproduce:/colon_workspace holoscan:polyp-det
 docker run --rm -it --gpus=all --ipc=host -v /raid/colon_reproduce:/colon_workspace nvcr.io/nvidia/clara-holoscan/holoscan:v2.7.0-dgpu-polyp-det
 # onnx to trt with dynamic shapes
 trtexec --onnx=rtdetrv2_timm_r50_nvimagenet_pretrained_neg_finetune.onnx --saveEngine=rt_detrv2_timm_r50_nvimagenet_pretrained_neg_finetune.trt \
